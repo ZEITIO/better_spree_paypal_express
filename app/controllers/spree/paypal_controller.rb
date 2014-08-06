@@ -6,7 +6,7 @@ module Spree
       order = current_order || raise(ActiveRecord::RecordNotFound)
       items = order.line_items.map(&method(:line_item))
 
-      tax_adjustments = order.all_adjustments.tax
+      tax_adjustments = order.all_adjustments.tax.additional
       shipping_adjustments = order.all_adjustments.shipping
 
       order.all_adjustments.eligible.each do |adjustment|
@@ -168,7 +168,7 @@ module Spree
     end
 
     def completion_route(order)
-      order_path(order, :token => order.guess_token)
+      order_path(order, :token => order.token)
     end
 
     def address_required?
