@@ -168,7 +168,7 @@ module Spree
     end
 
     def completion_route(order)
-      order_path(order, :token => order.guess_token)
+      order_path(order, :token => order.guest_token)
     end
 
     def address_required?
