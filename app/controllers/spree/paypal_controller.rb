@@ -30,17 +30,29 @@ module Spree
       end
       pp_request = provider.build_set_express_checkout(express_checkout_request_details(order, items))
 
-      begin
-        pp_response = provider.set_express_checkout(pp_request)
-        if pp_response.success?
-          redirect_to provider.express_checkout_url(pp_response)
-        else
-          flash[:error] = Spree.t('flash.generic_error', :scope => 'paypal', :reasons => pp_response.errors.map(&:long_message).join(" "))
-          redirect_to checkout_state_path(:payment)
+      respond_to do |format|
+        begin
+          pp_response = provider.set_express_checkout(pp_request)
+          if pp_response.success?
+            redirect_url = provider.express_checkout_url(pp_response)
+            format.html { redirect_to redirect_url }
+            format.json { render json: {redirect: redirect_url} }
+          else
+            errors = pp_response.errors.map(&:long_message).join(" ")
+            format.html do
+              flash[:error] = Spree.t('flash.generic_error', :scope => 'paypal', :reasons => errors)
+              redirect_to checkout_state_path(:payment)
+            end
+            format.json { render json: {error: errors}, status: 422 }
+          end
+        rescue SocketError
+          errors = Spree.t('flash.connection_failed', :scope => 'paypal')
+          format.html do
+            flash[:error] = errors
+            redirect_to checkout_state_path(:payment)
+          end
+          format.json { render json: {error: errors}, status: 422 }
         end
-      rescue SocketError
-        flash[:error] = Spree.t('flash.connection_failed', :scope => 'paypal')
-        redirect_to checkout_state_path(:payment)
       end
     end
 
